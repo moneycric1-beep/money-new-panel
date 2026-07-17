@@ -461,8 +461,6 @@ function renderCard(dev) {
     }
     html += '</div>';
   }
-    html += '</div>';
-  }
 
   // Footer
   html += '<div class="card-footer">';

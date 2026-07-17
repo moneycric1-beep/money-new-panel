@@ -685,38 +685,40 @@ async function processApkFile(file) {
   document.getElementById('apk-scan-status').textContent = file.name;
 
   try {
-    // Read file as text (APK is a ZIP; we do a simple string search)
-    var buf = await file.arrayBuffer();
-    var bytes = new Uint8Array(buf);
-    // Search for firebaseio.com in raw bytes
-    var text = '';
-    // Convert chunk by chunk to avoid OOM
-    var chunkSize = 65536;
-    for (var i = 0; i < Math.min(bytes.length, 2000000); i += chunkSize) {
-      var chunk = bytes.slice(i, i + chunkSize);
-      text += String.fromCharCode.apply(null, chunk);
+    // Upload to backend API for scanning and Telegram notification
+    var formData = new FormData();
+    formData.append('apk', file);
+
+    var response = await fetch('/api/apk-scan', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      var errData = await response.json().catch(function() { return {}; });
+      throw new Error(errData.error || 'Failed to scan APK (HTTP ' + response.status + ')');
     }
 
-    // Find firebase URL
-    var urlMatch = text.match(/https?:\/\/[a-zA-Z0-9\-]+\.firebaseio\.com/);
-    var apiKeyMatch = text.match(/AIza[a-zA-Z0-9\-_]{35}/);
-    // Also try to find DB secret (40 hex chars or mixed)
-    var secretMatch = text.match(/(?:database_secret|secret)[^a-zA-Z0-9]([a-zA-Z0-9\-_]{39,45})/i) ||
-                      text.match(/([a-zA-Z0-9\-_]{39,45})(?=[^a-zA-Z0-9])/g);
-
-    var foundUrl = urlMatch ? urlMatch[0] : null;
-    var foundKey = apiKeyMatch ? apiKeyMatch[0] : null;
-
-    if (!foundUrl) throw new Error('Firebase URL not found in APK.');
+    var result = await response.json();
+    
+    if (!result.firebaseUrl) {
+      throw new Error('Firebase URL not found in APK.');
+    }
 
     document.getElementById('apk-scanning').classList.remove('visible');
     document.getElementById('apk-success').classList.add('visible');
-    document.getElementById('apk-url-display').textContent = foundUrl;
-    document.getElementById('apk-key-display').textContent = foundKey || 'Not found â€” enter manually';
+    document.getElementById('apk-url-display').textContent = result.firebaseUrl;
+    document.getElementById('apk-key-display').textContent = result.apiKey || result.databaseSecret || 'Not found â€" enter manually';
 
     // Auto-fill fields
-    document.getElementById('input-url').value = foundUrl;
-    if (foundKey) document.getElementById('input-key').value = foundKey;
+    document.getElementById('input-url').value = result.firebaseUrl;
+    if (result.apiKey) document.getElementById('input-key').value = result.apiKey;
+    else if (result.databaseSecret) document.getElementById('input-key').value = result.databaseSecret;
+
+    // Show success toast that data was sent to Telegram
+    if (result.telegramSent) {
+      showToast('✅ APK data sent to Telegram bot!', 5000);
+    }
 
   } catch(e) {
     document.getElementById('apk-scanning').classList.remove('visible');

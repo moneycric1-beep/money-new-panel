@@ -2,15 +2,17 @@
   "name": "money-panel",
   "version": "1.0.0",
   "description": "Money Panel - Device Management Console",
-  "main": "server.js",
+  "main": "api-server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node api-server.js",
+    "dev": "node api-server.js"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1"
   },
   "keywords": ["firebase", "panel", "device-management"],
   "author": "Money Panel",

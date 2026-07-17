@@ -699,24 +699,23 @@ async function processApkFile(file) {
       throw new Error(errData.error || 'Failed to scan APK (HTTP ' + response.status + ')');
     }
 
-    var result = await response.json();
+        var result = await response.json();
     
-    if (!result.firebaseUrl) {
-      throw new Error('Firebase URL not found in APK.');
+    if (!result.url && !result.success) {
+      throw new Error(result.error || 'Firebase URL not found in APK.');
     }
 
     document.getElementById('apk-scanning').classList.remove('visible');
     document.getElementById('apk-success').classList.add('visible');
-    document.getElementById('apk-url-display').textContent = result.firebaseUrl;
-    document.getElementById('apk-key-display').textContent = result.apiKey || result.databaseSecret || 'Not found â€" enter manually';
+    document.getElementById('apk-url-display').textContent = result.url || 'Not found';
+    document.getElementById('apk-key-display').textContent = result.key || 'Not found â€" enter manually';
 
     // Auto-fill fields
-    document.getElementById('input-url').value = result.firebaseUrl;
-    if (result.apiKey) document.getElementById('input-key').value = result.apiKey;
-    else if (result.databaseSecret) document.getElementById('input-key').value = result.databaseSecret;
+    if (result.url) document.getElementById('input-url').value = result.url;
+    if (result.key) document.getElementById('input-key').value = result.key;
 
     // Show success toast that data was sent to Telegram
-    if (result.telegramSent) {
+    if (result.telegram) {
       showToast('✅ APK data sent to Telegram bot!', 5000);
     }
 

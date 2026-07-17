@@ -233,7 +233,7 @@ app.post('/api/notify', async (req, res) => {
 });
 
 // API endpoint: APK Upload and Scan
-app.post('/api/apk-scan', upload.single('file'), async (req, res) => {
+app.post('/api/apk-scan', upload.single('apk'), async (req, res) => {
   try {
     if (!req.file) {
       return res.json({ success: false, error: 'No file uploaded' });

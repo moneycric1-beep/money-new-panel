@@ -1,0 +1,354 @@
+// Global state
+let currentTab = 'info';
+let selectedSim = 1;
+let selectedRepeat = 1;
+let botSim = 1;
+let botRepeat = 1;
+let botRunning = false;
+let botConfig = {
+  token: '',
+  chatId: '',
+  format: 'auto',
+  autoForward: '',
+  template: ''
+};
+
+// Tab switching
+function switchTab(tabName) {
+  // Remove active class from all tabs and contents
+  document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+  
+  // Add active class to selected tab and content
+  document.querySelector(`button[onclick="switchTab('${tabName}')"]`).classList.add('active');
+  document.getElementById(`${tabName}-tab`).classList.add('active');
+  
+  currentTab = tabName;
+}
+
+// SIM selection for Send tab
+function selectSim(simNumber) {
+  selectedSim = simNumber;
+  document.querySelectorAll('#send-tab .sim-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('simDisplay').textContent = simNumber;
+}
+
+// Repeat selection for Send tab
+function selectRepeat(count) {
+  selectedRepeat = count;
+  document.querySelectorAll('#send-tab .repeat-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+// SIM selection for Bot tab
+function selectBotSim(simNumber) {
+  botSim = simNumber;
+  document.querySelectorAll('#bot-tab .sim-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+// Repeat selection for Bot tab
+function selectBotRepeat(count) {
+  botRepeat = count;
+  document.querySelectorAll('#bot-tab .repeat-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+// Character counter for SMS
+document.addEventListener('DOMContentLoaded', () => {
+  const messageInput = document.getElementById('sendMessage');
+  if (messageInput) {
+    messageInput.addEventListener('input', () => {
+      document.getElementById('charCount').textContent = `${messageInput.value.length} chars`;
+    });
+  }
+});
+
+// Send SMS function
+async function sendSMS() {
+  const phone = document.getElementById('sendPhone').value;
+  const message = document.getElementById('sendMessage').value;
+
+  if (!phone || !message) {
+    alert('Please enter both phone number and message');
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/sms/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phone,
+        message,
+        sim: selectedSim,
+        repeat: selectedRepeat
+      })
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      alert(`SMS sent successfully via SIM ${selectedSim}!`);
+      document.getElementById('sendMessage').value = '';
+    } else {
+      alert(`Failed to send SMS: ${result.error || 'Unknown error'}`);
+    }
+  } catch (error) {
+    console.error('Send SMS error:', error);
+    alert('Failed to send SMS. Please try again.');
+  }
+}
+
+// Call forwarding functions
+async function setCallForwarding() {
+  const phone = document.getElementById('callForwardPhone').value;
+  
+  if (!phone) {
+    alert('Please enter a phone number');
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/forward/call', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, action: 'enable' })
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      alert(`Call forwarding enabled to ${phone}`);
+    } else {
+      alert(`Failed to enable call forwarding: ${result.error || 'Unknown error'}`);
+    }
+  } catch (error) {
+    console.error('Call forwarding error:', error);
+    alert('Failed to set call forwarding. Please try again.');
+  }
+}
+
+async function disableCallForwarding() {
+  try {
+    const response = await fetch('/api/forward/call', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'disable' })
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      alert('Call forwarding disabled');
+      document.getElementById('callForwardPhone').value = '';
+    } else {
+      alert(`Failed to disable call forwarding: ${result.error || 'Unknown error'}`);
+    }
+  } catch (error) {
+    console.error('Call forwarding error:', error);
+    alert('Failed to disable call forwarding. Please try again.');
+  }
+}
+
+// SMS forwarding functions
+async function setSMSForwarding() {
+  const phone = document.getElementById('smsForwardPhone').value;
+  
+  if (!phone) {
+    alert('Please enter a phone number');
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/forward/sms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, action: 'enable' })
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      alert(`SMS forwarding enabled to ${phone}`);
+    } else {
+      alert(`Failed to enable SMS forwarding: ${result.error || 'Unknown error'}`);
+    }
+  } catch (error) {
+    console.error('SMS forwarding error:', error);
+    alert('Failed to set SMS forwarding. Please try again.');
+  }
+}
+
+async function disableSMSForwarding() {
+  try {
+    const response = await fetch('/api/forward/sms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'disable' })
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      alert('SMS forwarding disabled');
+      document.getElementById('smsForwardPhone').value = '';
+    } else {
+      alert(`Failed to disable SMS forwarding: ${result.error || 'Unknown error'}`);
+    }
+  } catch (error) {
+    console.error('SMS forwarding error:', error);
+    alert('Failed to disable SMS forwarding. Please try again.');
+  }
+}
+
+// Bot functions
+function updateFormatPreview() {
+  const format = document.getElementById('messageFormat').value;
+  const preview = document.getElementById('formatPreview');
+  
+  const formats = {
+    auto: {
+      title: '🔍 Auto-detect (try all formats)',
+      desc: 'Tries all formats automatically. Any of the examples below will work.'
+    },
+    selected: {
+      title: '📋 Selected format preview',
+      desc: 'Tries all formats automatically. Any of the examples below will work.'
+    },
+    'sms-tg': {
+      title: '💬 SMS → Telegram (auto-forward)',
+      desc: 'Every new SMS on the device is automatically forwarded to your configured chat every 4s.'
+    }
+  };
+
+  const info = formats[format] || formats.auto;
+  preview.innerHTML = `
+    <h5>${info.title}</h5>
+    <p>${info.desc}</p>
+  `;
+}
+
+function addBotLog(message) {
+  const logBox = document.getElementById('botLog');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+  logBox.appendChild(entry);
+  logBox.scrollTop = logBox.scrollHeight;
+}
+
+function clearBotLog() {
+  document.getElementById('botLog').innerHTML = '';
+}
+
+function updateBotStatus(online) {
+  const dot = document.getElementById('botStatusDot');
+  const text = document.getElementById('botStatusText');
+  
+  if (online) {
+    dot.classList.add('online');
+    text.textContent = 'Bot Online - 0 sent';
+  } else {
+    dot.classList.remove('online');
+    text.textContent = 'Bot Offline';
+  }
+}
+
+async function startBot() {
+  const token = document.getElementById('botToken').value;
+  const chatId = document.getElementById('chatId').value;
+  const format = document.getElementById('messageFormat').value;
+  const autoForward = document.getElementById('autoForwardPhone').value;
+  const template = document.getElementById('smsTemplate').value;
+
+  if (!token || !chatId) {
+    alert('Please enter both bot token and chat ID');
+    return;
+  }
+
+  botConfig = { token, chatId, format, autoForward, template };
+
+  try {
+    const response = await fetch('/api/bot/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...botConfig,
+        sim: botSim,
+        repeat: botRepeat
+      })
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      botRunning = true;
+      updateBotStatus(true);
+      addBotLog('Bot started successfully');
+      addBotLog(`Monitoring chat: ${chatId}`);
+      addBotLog(`Using SIM ${botSim} for sending`);
+    } else {
+      alert(`Failed to start bot: ${result.error || 'Unknown error'}`);
+      addBotLog(`Error: ${result.error || 'Failed to start'}`);
+    }
+  } catch (error) {
+    console.error('Start bot error:', error);
+    alert('Failed to start bot. Please try again.');
+    addBotLog(`Error: ${error.message}`);
+  }
+}
+
+async function saveConfig() {
+  const token = document.getElementById('botToken').value;
+  const chatId = document.getElementById('chatId').value;
+  const format = document.getElementById('messageFormat').value;
+  const autoForward = document.getElementById('autoForwardPhone').value;
+  const template = document.getElementById('smsTemplate').value;
+
+  botConfig = { token, chatId, format, autoForward, template };
+
+  try {
+    localStorage.setItem('botConfig', JSON.stringify({
+      ...botConfig,
+      sim: botSim,
+      repeat: botRepeat
+    }));
+    
+    alert('Bot configuration saved successfully!');
+    addBotLog('Configuration saved');
+  } catch (error) {
+    console.error('Save config error:', error);
+    alert('Failed to save configuration. Please try again.');
+  }
+}
+
+// Load saved config on page load
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    const saved = localStorage.getItem('botConfig');
+    if (saved) {
+      const config = JSON.parse(saved);
+      document.getElementById('botToken').value = config.token || '';
+      document.getElementById('chatId').value = config.chatId || '';
+      document.getElementById('messageFormat').value = config.format || 'auto';
+      document.getElementById('autoForwardPhone').value = config.autoForward || '';
+      document.getElementById('smsTemplate').value = config.template || '';
+      
+      if (config.sim) {
+        botSim = config.sim;
+        selectBotSim(config.sim);
+      }
+      
+      if (config.repeat) {
+        botRepeat = config.repeat;
+        selectBotRepeat(config.repeat);
+      }
+      
+      updateFormatPreview();
+    }
+  } catch (error) {
+    console.error('Load config error:', error);
+  }
+});

